@@ -20,7 +20,7 @@ public class ColorBlindGUI extends JFrame {
         // ======== Top Panel ========
         JPanel topPanel = new JPanel();
         JButton loadButton = new JButton("Load Image");
-        filterSelector = new JComboBox<>(new String[]{"None", "Deuteranopia", "Protanopia", "Tritanopia"});
+        filterSelector = new JComboBox<>(new String[]{"None", "Deuteranopia (Red/Green)", "Protanopia (Red/Green)", "Tritanopia (Blue/Yellow)"});
         correctionMode = new JCheckBox("Flexible %");
         JButton applyButton = new JButton("Apply");
 
