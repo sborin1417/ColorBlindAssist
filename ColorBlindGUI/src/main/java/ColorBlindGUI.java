@@ -3,22 +3,23 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.File;
 import javax.imageio.ImageIO;
-import src.*;
+
 import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 
 
 public class ColorBlindGUI extends JFrame {
     private JLabel originalLabel, filteredLabel;
     private BufferedImage originalImage, filteredImage;
+    private BufferedImage imageFromCamera;
     private JComboBox<String> filterSelector;
     private JCheckBox correctionMode;
     private JSlider intensitySlider;
     private JCheckBox imageCamera;
-    private FrameConverter frameConversion;
+    private frameConverter frameConversion;
     private Camera camera;
+    private Timer cameraTimer;
+
     public ColorBlindGUI() {
         setTitle("Colorblind Image Altering");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -27,10 +28,10 @@ public class ColorBlindGUI extends JFrame {
 
         // ======== Top Panel ========
         JPanel topPanel = new JPanel();
-        JButton loadButton = new JButton("Load Image");
+        JButton loadButton = new JButton("Start");
         filterSelector = new JComboBox<>(new String[]{"None", "Deuteranopia (Red/Green)", "Protanopia (Red/Green)", "Tritanopia (Blue/Yellow)"});
         correctionMode = new JCheckBox("Flexible %");
-        JButton applyButton = new JButton("Apply");
+        JButton applyButton = new JButton("Apply Filter to Frame");
 
         intensitySlider = new JSlider(0, 100, 100);
         intensitySlider.setMajorTickSpacing(25);
@@ -45,7 +46,7 @@ public class ColorBlindGUI extends JFrame {
         topPanel.add(intensityLabel);
         topPanel.add(intensitySlider);
         topPanel.add(applyButton);
-        
+
 
         // ======== Image Display ========
         JPanel imagePanel = new JPanel(new GridLayout(1, 2));
@@ -61,10 +62,34 @@ public class ColorBlindGUI extends JFrame {
         intensitySlider.addChangeListener(e -> applyFilter()); // live update when sliding
 
         // ========== Additional Features ===========
-        imageCamera = new JCheckBox("Image Loading from Device Camera")
-        topPanel.add(imageCamera)
-        frameConversion = new FrameConverter();
+        imageCamera = new JCheckBox("Image Loading from Device Camera");
+        topPanel.add(imageCamera);
+        frameConversion = new frameConverter();
         camera = new Camera();
+        imageCamera.addActionListener(e -> {
+            if (!imageCamera.isSelected() && cameraTimer != null && cameraTimer.isRunning()) {
+                cameraTimer.stop();
+                try {
+                    camera.closeCamera();
+                } catch (Exception e1) {
+                    System.out.println(e1.getMessage());
+                }
+            }
+        });
+
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                if (cameraTimer != null && cameraTimer.isRunning()) {
+                    cameraTimer.stop();
+                }
+                try {
+                    camera.closeCamera();
+                } catch (Exception e2) {
+                    System.out.println(e2.getMessage());
+                }
+            }
+        });
 
 
 
@@ -73,41 +98,91 @@ public class ColorBlindGUI extends JFrame {
         setVisible(true);
     }
 
+
     private void loadImage() {
-        boolean deviceCameraSelected = imageCamera.isSelected()
-        try{
-            while (deviceCameraSelected == true){
-                camera.startCamera()
-                Frame frame = camera.getFrame();
-                imageFromCamera = frameConversion.convertFrameToBufferedImage(frame);
-                imageFromCamera.setIcon(new ImageIcon(originalImage.getScaledInstance(originalLabel.getWidth(), originalLabel.getHeight(), Image.SCALE_SMOOTH)));
-                filteredLabel.setIcon(null);
+        boolean deviceCameraSelected = imageCamera.isSelected();
+        System.out.println("Load Image called. Camera selected: " + deviceCameraSelected);
+
+        if (deviceCameraSelected) {
+            // Stop any existing camera timer
+            if (cameraTimer != null && cameraTimer.isRunning()) {
+                System.out.println("Stopping existing camera timer");
+                cameraTimer.stop();
             }
-            camera.closeCamera()
+
+            try {
+                System.out.println("Starting camera...");
+                camera.startCamera();
+                System.out.println("Camera started successfully");
+
+                // Create a timer to continuously grab frames
+                cameraTimer = new Timer(33, e -> { // ~30 fps
+                    try {
+                        Frame frame = camera.getFrame();
+                        System.out.println("Frame grabbed: " + (frame != null));
+
+                        if (frame != null) {
+                            imageFromCamera = frameConversion.convertFrameToBufferedImage(frame);
+                            System.out.println("Frame converted: " + (imageFromCamera != null));
+
+                            originalImage = imageFromCamera; // Set as original for filters
+
+                            if (originalImage != null) {
+                                System.out.println("Image size: " + originalImage.getWidth() + "x" + originalImage.getHeight());
+                                originalLabel.setIcon(new ImageIcon(originalImage.getScaledInstance(
+                                        originalLabel.getWidth(),
+                                        originalLabel.getHeight(),
+                                        Image.SCALE_SMOOTH)));
+                            }
+                        }
+                    } catch (Exception e1) {
+                        System.err.println("Error in timer: " + e1.getMessage());
+
+                        cameraTimer.stop();
+                        try {
+                            camera.closeCamera();
+                        } catch (Exception closeEx) {
+                            closeEx.printStackTrace();
+                        }
+                        JOptionPane.showMessageDialog(ColorBlindGUI.this, "Error capturing frame: " + e1.getMessage());
+                    }
+                });
+                cameraTimer.start();
+                System.out.println("Camera timer started");
+
+            } catch (Exception e) {
+                System.err.println("Error starting camera: " + e.getMessage());
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Error starting camera: " + e.getMessage());
+            }
+        } else {
+            // Stop camera if it's running
+            if (cameraTimer != null && cameraTimer.isRunning()) {
+                cameraTimer.stop();
+                try {
+                    camera.closeCamera();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Load from file
             JFileChooser chooser = new JFileChooser();
             if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File file = chooser.getSelectedFile();
-                originalImage = ImageIO.read(file);
-                originalLabel.setIcon(new ImageIcon(originalImage.getScaledInstance(originalLabel.getWidth(), originalLabel.getHeight(), Image.SCALE_SMOOTH)));
-                filteredLabel.setIcon(null);
-            }
-        } catch (Exception e){
-            JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage());
-        }
-
-       
-        JFileChooser chooser = new JFileChooser();
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
-            File file = chooser.getSelectedFile();
-            try {
-                originalImage = ImageIO.read(file);
-                originalLabel.setIcon(new ImageIcon(originalImage.getScaledInstance(originalLabel.getWidth(), originalLabel.getHeight(), Image.SCALE_SMOOTH)));
-                filteredLabel.setIcon(null);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage());
+                try {
+                    originalImage = ImageIO.read(file);
+                    originalLabel.setIcon(new ImageIcon(originalImage.getScaledInstance(
+                            originalLabel.getWidth(),
+                            originalLabel.getHeight(),
+                            Image.SCALE_SMOOTH)));
+                    filteredLabel.setIcon(null);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage());
+                }
             }
         }
-
+        applyFilter();
     }
 
     private void applyFilter() {
@@ -133,17 +208,17 @@ public class ColorBlindGUI extends JFrame {
         BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
 
         double[][] M = switch (type) {
-            case "Protanopia" -> new double[][]{
+            case "Protanopia (Red/Green)" -> new double[][]{
                     {0.56667, 0.43333, 0.0},
                     {0.55833, 0.44167, 0.0},
                     {0.0, 0.24167, 0.75833}
             };
-            case "Deuteranopia" -> new double[][]{
+            case "Deuteranopia (Red/Green)" -> new double[][]{
                     {0.625, 0.375, 0.0},
                     {0.7, 0.3, 0.0},
                     {0.0, 0.3, 0.7}
             };
-            case "Tritanopia" -> new double[][]{
+            case "Tritanopia (Blue/Yellow)" -> new double[][]{
                     {0.95, 0.05, 0.0},
                     {0.0, 0.43333, 0.56667},
                     {0.0, 0.475, 0.525}
