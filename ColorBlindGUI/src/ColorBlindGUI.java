@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.awt.image.*;
 import java.io.File;
 import javax.imageio.ImageIO;
@@ -11,6 +12,7 @@ public class ColorBlindGUI extends JFrame {
     private JCheckBox correctionMode;
     private JSlider intensitySlider;
 
+    public RenderedImage finalImage = null;
     public ColorBlindGUI() {
         setTitle("Colorblind Image Altering");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -23,6 +25,7 @@ public class ColorBlindGUI extends JFrame {
         filterSelector = new JComboBox<>(new String[]{"None", "Deuteranopia (Red/Green)", "Protanopia (Red/Green)", "Tritanopia (Blue/Yellow)"});
         correctionMode = new JCheckBox("Flexible %");
         JButton applyButton = new JButton("Apply");
+        JButton downloadButton = new JButton("Download Image");
 
         intensitySlider = new JSlider(0, 100, 100);
         intensitySlider.setMajorTickSpacing(25);
@@ -37,6 +40,7 @@ public class ColorBlindGUI extends JFrame {
         topPanel.add(intensityLabel);
         topPanel.add(intensitySlider);
         topPanel.add(applyButton);
+        topPanel.add(downloadButton);
         add(topPanel, BorderLayout.NORTH);
 
         // ======== Image Display ========
@@ -49,7 +53,10 @@ public class ColorBlindGUI extends JFrame {
 
         // ======== Actions ========
         loadButton.addActionListener(e -> loadImage());
-        applyButton.addActionListener(e -> applyFilter());
+        applyButton.addActionListener(e -> {
+            finalImage = applyFilter();
+        });
+        downloadButton.addActionListener(e -> allowDownload(finalImage));
         intensitySlider.addChangeListener(e -> applyFilter()); // live update when sliding
 
         setVisible(true);
@@ -69,8 +76,8 @@ public class ColorBlindGUI extends JFrame {
         }
     }
 
-    private void applyFilter() {
-        if (originalImage == null) return;
+    private RenderedImage applyFilter() {
+        if (originalImage == null) return null;
 
         String filterType = (String) filterSelector.getSelectedItem();
         boolean correct = correctionMode.isSelected();
@@ -80,9 +87,25 @@ public class ColorBlindGUI extends JFrame {
             filteredImage = originalImage;
         } else {
             filteredImage = simulateColorBlindness(originalImage, filterType, correct, intensity);
+            System.out.print("editingImage");
         }
 
         filteredLabel.setIcon(new ImageIcon(filteredImage.getScaledInstance(filteredLabel.getWidth(), filteredLabel.getHeight(), Image.SCALE_SMOOTH)));
+        return filteredImage;
+    }
+
+    private void allowDownload(RenderedImage download){
+        JFileChooser chooser = new JFileChooser();
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = chooser.getSelectedFile();
+            // Get filepath
+            String filePath = selectedFile.getAbsolutePath(); // Get the absolute path
+            try {
+                ImageIO.write(download, "filtered_image", selectedFile);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error downloading image: " + ex.getMessage());
+            }
+        }
     }
 
     // ======== Core Transformation Logic ========
@@ -152,6 +175,7 @@ public class ColorBlindGUI extends JFrame {
         return Math.max(0.0, Math.min(1.0, v));
     }
 
+    // Use swing for filepath accessing
     public static void main(String[] args) {
         SwingUtilities.invokeLater(ColorBlindGUI::new);
     }
