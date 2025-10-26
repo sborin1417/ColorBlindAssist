@@ -15,10 +15,20 @@
     </properties>
 
     <dependencies>
-        <dependency>
+            <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv-platform</artifactId>
-            <version>1.5.5</version>
+            <version>1.5.12</version> <!-- Use the latest stable version -->
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>opencv-platform</artifactId>
+            <version>4.9.0-1.5.12</version> <!-- Use the compatible version for your javacv -->
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>ffmpeg-platform</artifactId>
+            <version>7.0-1.5.12</version> <!-- Use the compatible version for your javacv -->
         </dependency>
     </dependencies>
 
