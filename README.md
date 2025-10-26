@@ -1,7 +1,7 @@
 # ColorBlindAssist
 
 ## Motivation
-  Color Blind Assist is a oftware designed to help individuals with deuteranopia (red-green colorblindness caused by defficiency in green cones), protanopia (red-green colorblindness caused by deficiency in red cones) and tritanopia (blue-yellow colorblindness caused by deficiency in blue cones) view images in a more accessable way. 
+  Color Blind Assist is a software designed to help individuals with deuteranopia (red-green colorblindness caused by defficiency in green cones), protanopia (red-green colorblindness caused by deficiency in red cones) and tritanopia (blue-yellow colorblindness caused by deficiency in blue cones) view images in a more accessable way. Color Blind Assist takes an image as input along with user parameters and will edit the RGB content of the image for ease of visibility for colorblind users.
 
   The software allows the user to select an image on their device for processing. They can then select which type of colorblindness affects them (for best visual experience). Additionally, they can choose to have the image alteration be only a percentage of the full, traditional operation. This allows more flexibility for the user. 
 
