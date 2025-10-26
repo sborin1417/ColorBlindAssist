@@ -3,6 +3,12 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.File;
 import javax.imageio.ImageIO;
+import src.*;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+
 
 public class ColorBlindGUI extends JFrame {
     private JLabel originalLabel, filteredLabel;
@@ -10,7 +16,9 @@ public class ColorBlindGUI extends JFrame {
     private JComboBox<String> filterSelector;
     private JCheckBox correctionMode;
     private JSlider intensitySlider;
-
+    private JCheckBox imageCamera;
+    private FrameConverter frameConversion;
+    private Camera camera;
     public ColorBlindGUI() {
         setTitle("Colorblind Image Altering");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -37,7 +45,7 @@ public class ColorBlindGUI extends JFrame {
         topPanel.add(intensityLabel);
         topPanel.add(intensitySlider);
         topPanel.add(applyButton);
-        add(topPanel, BorderLayout.NORTH);
+        
 
         // ======== Image Display ========
         JPanel imagePanel = new JPanel(new GridLayout(1, 2));
@@ -52,10 +60,42 @@ public class ColorBlindGUI extends JFrame {
         applyButton.addActionListener(e -> applyFilter());
         intensitySlider.addChangeListener(e -> applyFilter()); // live update when sliding
 
+        // ========== Additional Features ===========
+        imageCamera = new JCheckBox("Image Loading from Device Camera")
+        topPanel.add(imageCamera)
+        frameConversion = new FrameConverter();
+        camera = new Camera();
+
+
+
+        add(topPanel, BorderLayout.NORTH);
+
         setVisible(true);
     }
 
     private void loadImage() {
+        boolean deviceCameraSelected = imageCamera.isSelected()
+        try{
+            while (deviceCameraSelected == true){
+                camera.startCamera()
+                Frame frame = camera.getFrame();
+                imageFromCamera = frameConversion.convertFrameToBufferedImage(frame);
+                imageFromCamera.setIcon(new ImageIcon(originalImage.getScaledInstance(originalLabel.getWidth(), originalLabel.getHeight(), Image.SCALE_SMOOTH)));
+                filteredLabel.setIcon(null);
+            }
+            camera.closeCamera()
+            JFileChooser chooser = new JFileChooser();
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+                originalImage = ImageIO.read(file);
+                originalLabel.setIcon(new ImageIcon(originalImage.getScaledInstance(originalLabel.getWidth(), originalLabel.getHeight(), Image.SCALE_SMOOTH)));
+                filteredLabel.setIcon(null);
+            }
+        } catch (Exception e){
+            JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage());
+        }
+
+       
         JFileChooser chooser = new JFileChooser();
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
@@ -67,6 +107,7 @@ public class ColorBlindGUI extends JFrame {
                 JOptionPane.showMessageDialog(this, "Error loading image: " + ex.getMessage());
             }
         }
+
     }
 
     private void applyFilter() {
