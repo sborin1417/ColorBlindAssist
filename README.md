@@ -6,4 +6,9 @@
   The software allows the user to select an image on their device for processing. They can then select which type of colorblindness affects them (for best visual experience). Additionally, they can choose to have the image alteration be only a percentage of the full, traditional operation. This allows more flexibility for the user. 
 
 ## How to Run
-  Color Blind Assist is contained in a single Java file and can easily be run using VisualStudio Code, IntelliJ, Eclipse, or any other Java compiler of your choice. Keep in mind that this code contains switch statements which are only supported in newer versions of Java. Also, this requires the latest JDK version
+  Color Blind Assist is contained in a single Java file and can easily be run using VisualStudio Code, IntelliJ, Eclipse, or any other Java compiler of your choice. Keep in mind that this code contains switch statements which are only supported in newer versions of Java. Also, this requires the latest JDK version of 24 to run. 
+
+
+  ## Process
+
+  After loading the program in, you can choose between either using your device camera or pre-loading images in. To select a device camera, make sure to click the check box. After choosing the mode of image capture, click the start button to process. After this, you have to click the "Apply Filter" button after selecting the corresponding filter. Keep in mind that the filter processes singular frames each time the button is clicked. After the filter is applied, you can download the image to anywhere on your directory with a customized filepath name. 
